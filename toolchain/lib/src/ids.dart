@@ -1,4 +1,4 @@
-import 'package:vils/src/compiler/graph.dart';
+import 'package:vils_toolchain/src/compiler/graph.dart';
 
 sealed class NodeId {
   const NodeId();

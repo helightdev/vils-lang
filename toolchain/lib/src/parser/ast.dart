@@ -1,7 +1,7 @@
 import 'package:antlr4/antlr4.dart';
 import 'package:dart_scope_functions/dart_scope_functions.dart';
-import 'package:vils/src/location.dart';
-import 'package:vils/src/value.dart';
+import 'package:vils_toolchain/src/location.dart';
+import 'package:vils_toolchain/src/value.dart';
 
 import '../ids.dart';
 

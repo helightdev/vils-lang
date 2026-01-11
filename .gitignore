@@ -1,11 +1,12 @@
 # https://dart.dev/guides/libraries/private-files
 # Created by `dart pub`
 .dart_tool/
-pubspec.lock
+toolchain/pubspec.lock
 .puro.json
 
 **/.flutter-plugins
 **/.flutter-plugins-dependencies
+/pubspec.lock
 
 # IntelliJ
 .idea/

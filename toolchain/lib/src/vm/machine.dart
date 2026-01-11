@@ -1,11 +1,11 @@
 import 'package:collection/collection.dart';
-import 'package:vils/src/ids.dart';
-import 'package:vils/src/location.dart';
-import 'package:vils/src/utils/tables.dart';
-import 'package:vils/src/value.dart';
-import 'package:vils/src/vm/lib/lang.dart';
-import 'package:vils/src/vm/lib/math.dart';
-import 'package:vils/src/vm/trace.dart';
+import 'package:vils_toolchain/src/ids.dart';
+import 'package:vils_toolchain/src/location.dart';
+import 'package:vils_toolchain/src/utils/tables.dart';
+import 'package:vils_toolchain/src/value.dart';
+import 'package:vils_toolchain/src/vm/lib/lang.dart';
+import 'package:vils_toolchain/src/vm/lib/math.dart';
+import 'package:vils_toolchain/src/vm/trace.dart';
 
 class VMachine {
   late List<VNode> nodes = [];

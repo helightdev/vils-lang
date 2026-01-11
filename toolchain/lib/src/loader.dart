@@ -1,8 +1,8 @@
-import 'package:vils/src/parser/ast.dart';
-import 'package:vils/src/ids.dart';
-import 'package:vils/src/value.dart';
-import 'package:vils/src/vm/machine.dart';
-import 'package:vils/vils.dart';
+import 'package:vils_toolchain/src/parser/ast.dart';
+import 'package:vils_toolchain/src/ids.dart';
+import 'package:vils_toolchain/src/value.dart';
+import 'package:vils_toolchain/src/vm/machine.dart';
+import 'package:vils_toolchain/vils.dart';
 
 void loadGraphIntoMachine(VMachine machine, CompilationNodeGraph graph) {
   for (var node in graph.sortedNodes()) {

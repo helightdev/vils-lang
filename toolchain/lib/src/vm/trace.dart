@@ -1,5 +1,5 @@
-import 'package:vils/src/ids.dart';
-import 'package:vils/src/location.dart';
+import 'package:vils_toolchain/src/ids.dart';
+import 'package:vils_toolchain/src/location.dart';
 
 class VException {
   String type;

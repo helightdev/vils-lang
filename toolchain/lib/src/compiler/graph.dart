@@ -1,9 +1,9 @@
 import 'package:graphs/graphs.dart';
-import 'package:vils/src/location.dart';
-import 'package:vils/src/parser/ast.dart';
-import 'package:vils/src/ids.dart';
-import 'package:vils/src/value.dart';
-import 'package:vils/src/vm/machine.dart';
+import 'package:vils_toolchain/src/location.dart';
+import 'package:vils_toolchain/src/parser/ast.dart';
+import 'package:vils_toolchain/src/ids.dart';
+import 'package:vils_toolchain/src/value.dart';
+import 'package:vils_toolchain/src/vm/machine.dart';
 
 class IRNode {
   NodeId id;

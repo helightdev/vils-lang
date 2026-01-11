@@ -2,7 +2,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
-import 'package:vils/src/ids.dart';
+import 'package:vils_toolchain/src/ids.dart';
 
 sealed class Val {
   const Val();

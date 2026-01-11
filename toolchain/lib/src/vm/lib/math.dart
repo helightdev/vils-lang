@@ -1,5 +1,5 @@
-import 'package:vils/src/value.dart';
-import 'package:vils/src/vm/machine.dart';
+import 'package:vils_toolchain/src/value.dart';
+import 'package:vils_toolchain/src/vm/machine.dart';
 
 final stdMathLib = VLibrary(
   functions: [

@@ -1,8 +1,8 @@
-import 'package:vils/src/loader.dart';
-import 'package:vils/src/parser/parser.dart';
-import 'package:vils/src/value.dart';
-import 'package:vils/src/vm/machine.dart';
-import 'package:vils/vils.dart';
+import 'package:vils_toolchain/src/loader.dart';
+import 'package:vils_toolchain/src/parser/parser.dart';
+import 'package:vils_toolchain/src/value.dart';
+import 'package:vils_toolchain/src/vm/machine.dart';
+import 'package:vils_toolchain/vils.dart';
 
 void main() async {
   var machine = VMachine();
