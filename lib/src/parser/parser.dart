@@ -4,10 +4,10 @@ import 'dart:convert';
 import 'package:antlr4/antlr4.dart';
 import 'package:dart_scope_functions/dart_scope_functions.dart';
 import 'package:vils/src/parser/ast.dart';
-import 'package:vils/src/gen/VilsLexer.dart';
-import 'package:vils/src/gen/VilsParser.dart';
-import 'package:vils/src/gen/VilsParserBaseVisitor.dart';
 import 'package:vils/src/ids.dart';
+import 'package:vils/src/parser/gen/VilsLexer.dart';
+import 'package:vils/src/parser/gen/VilsParser.dart';
+import 'package:vils/src/parser/gen/VilsParserBaseVisitor.dart';
 import 'package:vils/src/value.dart';
 
 CompilationUnitAst parseUnitAst(String input) {

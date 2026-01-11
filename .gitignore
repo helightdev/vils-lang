@@ -13,4 +13,5 @@ pubspec.lock
 
 # Antlr
 *.tokens
-gen/
+*.interp
+/gen/
