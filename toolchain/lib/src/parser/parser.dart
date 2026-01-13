@@ -23,31 +23,39 @@ CompilationUnitAst parseUnitAst(String input) {
 class _Parser extends VilsParserBaseVisitor<VilsAst> {
   @override
   CompilationUnitAst visitCompilationUnit(CompilationUnitContext ctx) {
-    var blocks = <BlockAst>[];
-    var edges = <EdgeDeclarationAst>[];
-    var edgeMacroInvocations = <EdgeMacroInvocationAst>[];
+    final blocks = <BlockAst>[];
+    final mainStatementList = GraphStatementListAst([], []);
+    final subroutines = <String, GraphStatementListAst>{};
     for (var statement in ctx.topLevelStatements()) {
       if (statement.block() != null) {
         var blockAst = visitBlock(statement.block()!);
         if (blockAst != null) {
           blocks.add(blockAst);
         }
-      } else if (statement.edgeDeclaration() != null) {
-        var edgeAst = visitEdgeDeclaration(statement.edgeDeclaration()!);
-        if (edgeAst != null && edgeAst is EdgeDeclarationAst) {
-          edges.add(edgeAst);
-        }
-      } else if (statement.edgeMacroInvocation() != null) {
-        var edgeMacroAst = visitEdgeMacroInvocation(
-          statement.edgeMacroInvocation()!,
+      } else if (statement.graphStatement() != null) {
+        mainStatementList.merge(
+          _parseGraphStatements([statement.graphStatement()!]),
         );
-        if (edgeMacroAst != null && edgeMacroAst is EdgeMacroInvocationAst) {
-          edgeMacroInvocations.add(edgeMacroAst);
-        }
+      } else if (statement.subroutine() != null) {
+        final subroutine = statement.subroutine()!;
+        final block = _parseGraphStatements(subroutine.graphStatements())
+          ..location = subroutine.toLocation();
+        final id = subroutine.IDENTIFIER()!.text!;
+        subroutines[id] = block;
       }
     }
-    return CompilationUnitAst(blocks, edges, edgeMacroInvocations)
+    return CompilationUnitAst(blocks, mainStatementList, subroutines)
       ..location = ctx.toLocation();
+  }
+
+  GraphStatementListAst _parseGraphStatements(
+    List<GraphStatementContext> statements,
+  ) {
+    final parsed = statements.map(visitGraphStatement).toList();
+    return GraphStatementListAst(
+      parsed.whereType<EdgeDeclarationAst>().toList(),
+      parsed.whereType<EdgeMacroInvocationAst>().toList(),
+    );
   }
 
   @override
@@ -69,12 +77,13 @@ class _Parser extends VilsParserBaseVisitor<VilsAst> {
   VilsAst? visitEdgeDeclaration(EdgeDeclarationContext ctx) {
     final inputs = _parseNodeRefList(ctx.nodeRefList()!);
     final output = _parseNodeRef(ctx.nodeRef()!);
+    final annotations = ctx.annotations().map(visitAnnotation).toList();
     final transformations = ctx
         .transformations()
         .map(visitTransformation)
         .toList();
 
-    return EdgeDeclarationAst(output, inputs, transformations)
+    return EdgeDeclarationAst(output, inputs, transformations, annotations)
       ..location = ctx.toLocation();
   }
 
@@ -85,7 +94,8 @@ class _Parser extends VilsParserBaseVisitor<VilsAst> {
     if (ctx.IDENTIFIERs().length > 1) {
       value = StringVal(ctx.IDENTIFIER(1)!.text!);
     }
-    return EdgeMacroInvocationAst(id, value)..location = ctx.toLocation();
+    final annotations = ctx.annotations().map(visitAnnotation).toList();
+    return EdgeMacroInvocationAst(id, value, annotations)..location = ctx.toLocation();
   }
 
   @override

@@ -1,14 +1,13 @@
-import 'package:vils_toolchain/src/parser/ast.dart';
+import 'package:vils_toolchain/src/vm/compiler/graph.dart';
+import 'package:vils_toolchain/src/vm/compiler/ir.dart';
 import 'package:vils_toolchain/src/ids.dart';
 import 'package:vils_toolchain/src/value.dart';
 import 'package:vils_toolchain/src/vm/machine.dart';
-import 'package:vils_toolchain/vils.dart';
 
-void loadGraphIntoMachine(VMachine machine, CompilationNodeGraph graph) {
+void loadGraphIntoMachine(VMachine machine, IRNodeGraph graph) {
   for (var node in graph.sortedNodes()) {
     final id = node.id;
     var transformation = node.transformation;
-    if (transformation == null) continue;
 
     final vmNode = VNode(id);
     final dependencies = <NodeId>[];
@@ -17,15 +16,6 @@ void loadGraphIntoMachine(VMachine machine, CompilationNodeGraph graph) {
     }
     vmNode.dependencies = dependencies;
 
-    switch (transformation.type) {
-      case TransformationType.invoke:
-        vmNode.executable = machine.getFunction(transformation.arg0!.asString());
-        vmNode.arg = transformation.arg1 ?? const NullVal();
-        break;
-      case TransformationType.execute:
-        // TODO: Handle this case.
-        throw UnimplementedError();
-    }
     for (var annotation in node.annotations) {
       if (annotation.name == "stack") {
         var str = annotation.value?.asString() ?? "";
@@ -35,9 +25,24 @@ void loadGraphIntoMachine(VMachine machine, CompilationNodeGraph graph) {
         continue;
       }
 
+      if (annotation.name == "noSchedule") {
+        vmNode.schedulable = false;
+        continue;
+      }
+
       vmNode.annotations.add(VAnnotation(annotation.name, annotation.value));
     }
 
     machine.addNode(vmNode);
+    if (transformation == null) continue;
+    switch (transformation.type) {
+      case TransformationType.invoke:
+        vmNode.executable = machine.getFunction(transformation.arg0!.asString());
+        vmNode.arg = transformation.arg1 ?? const NullVal();
+        break;
+      case TransformationType.execute:
+      // TODO: Handle this case.
+        throw UnimplementedError();
+    }
   }
 }

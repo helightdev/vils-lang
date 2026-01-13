@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 String byteArrayToSourceString(List<int> byteArray) {
   final buffer = StringBuffer();
   for (var byte in byteArray) {

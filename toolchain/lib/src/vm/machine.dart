@@ -1,11 +1,12 @@
 import 'package:collection/collection.dart';
+import 'package:vils_toolchain/src/vm/compiler/macro.dart';
+import 'package:vils_toolchain/src/vm/compiler/scope.dart';
 import 'package:vils_toolchain/src/ids.dart';
 import 'package:vils_toolchain/src/location.dart';
 import 'package:vils_toolchain/src/utils/tables.dart';
 import 'package:vils_toolchain/src/value.dart';
-import 'package:vils_toolchain/src/vm/lib/lang.dart';
-import 'package:vils_toolchain/src/vm/lib/math.dart';
-import 'package:vils_toolchain/src/vm/trace.dart';
+import 'package:vils_toolchain/src/vm/function.dart';
+import 'package:vils_toolchain/src/vm/library.dart';
 
 class VMachine {
   late List<VNode> nodes = [];
@@ -13,6 +14,11 @@ class VMachine {
   late Map<NodeId, VNode> nodeMap = {};
 
   final Map<String, VFunction> functions = {};
+  final Map<String, VMacro> macros = {};
+
+  CompilationScope createCompilationScope() {
+    return CompilationScope(this);
+  }
 
   void addNode(VNode node) {
     if (nodeMap.containsKey(node.id)) {
@@ -29,6 +35,13 @@ class VMachine {
     return functions["$package:$name"];
   }
 
+  VMacro? getMacro(String name, {String? package}) {
+    if (package == null) {
+      return macros.values.firstWhereOrNull((e) => e.name == name);
+    }
+    return macros["$package:$name"];
+  }
+
   VNode? getNode(NodeId id) {
     return nodes.firstWhereOrNull((node) => node.id == id);
   }
@@ -36,6 +49,9 @@ class VMachine {
   void load(VLibrary library) {
     for (var function in library.functions) {
       functions[function.qualifiedName] = function;
+    }
+    for (var macro in library.macros) {
+      macros[macro.qualifiedName] = macro;
     }
   }
 
@@ -45,25 +61,26 @@ class VMachine {
   }) async {
     var vmState = VMachineState(this, input, argument);
     var val = await vmState.execute();
-    print("---/END");
     vmState.debugPrint();
-    print("---/");
     return val;
   }
 }
 
-class VAnnotation  {
+class VAnnotation {
   final String name;
   final Val? value;
 
   const VAnnotation(this.name, this.value);
+
+  @override
+  String toString() {
+    return 'VAnnotation{name: $name, value: $value}';
+  }
 }
 
 class VMachineState {
-  static final inNodeDef = VNode(const InputNodeId())
-    ..schedulable = false;
-  static final argNodeDef = VNode(const ArgumentNodeId())
-    ..schedulable = false;
+  static final inNodeDef = VNode(const InputNodeId())..schedulable = false;
+  static final argNodeDef = VNode(const ArgumentNodeId())..schedulable = false;
 
   final VMachine vm;
 
@@ -100,9 +117,6 @@ class VMachineState {
         depState.next.add(state);
       }
     }
-    print("VMachineState initialized with ${nodes.length} nodes.");
-    debugPrint();
-    print("---");
   }
 
   final List<VNodeState> scheduled = [];
@@ -147,7 +161,6 @@ class VMachineState {
     node.status = VNodeStatus.scheduled;
     scheduled.add(node);
     node.delegate.executable?.scheduled(node);
-    print("Scheduled node ${node.id}");
   }
 
   void scheduleNextNodes(VNodeState node) {
@@ -174,16 +187,17 @@ class VMachineState {
         .map(
           (e) => [
             e.id,
-            e.delegate.executable?.toString() ?? (e.delegate.schedulable ? "<no-op>" : "<bucket>"),
+            e.delegate.executable?.toString() ??
+                (e.delegate.schedulable ? "<no-op>" : "<bucket>"),
             e.status.name.split(".").last,
-            e.dependencies.map((e) => e.id).nonNulls.join(","),
             e.result.asString(),
+            e.dependencies.map((e) => e.id).nonNulls.join(","),
             e.next.map((e) => e.id).nonNulls.join(","),
           ],
         )
         .toList();
     final str = buildTable([
-      ["Node ID", "Name", "Status", "Dependencies", "Result", "Next"],
+      ["Node ID", "Name", "Status", "Result", "Dependencies", "Next"],
       ...rows,
     ]);
     print(str);
@@ -289,12 +303,13 @@ class VMachineState {
       return false;
     }
 
+    node.context = context;
     node.status = VNodeStatus.running;
     // TODO: Handle gas / cost
     var returned = node.delegate.executable!.execute(context);
     node.result = returned;
     if (returned is! FutureVal) {
-      context.complete(returned);
+      node.complete(returned);
     }
     return true;
   }
@@ -313,7 +328,7 @@ class VNode {
   SourceLocation? location;
 
   Val arg = const NullVal();
-  
+
   bool popInput = false;
   bool popArgument = false;
   bool pushResult = false;
@@ -333,9 +348,50 @@ class VNodeState {
 
   Val arg = const NullVal();
   Val result = const NullVal();
+  VExecutableContext? context;
+
   List<VNodeState> dependencies = [];
   List<VNodeState> next = [];
   VNodeStatus status = VNodeStatus.initial;
+
+  void complete(Val value) {
+    var currentResult = result;
+    if (currentResult is FutureVal) {
+      currentResult.complete(value);
+    }
+    result = value;
+    status = VNodeStatus.completed;
+    parent.scheduleNextNodes(this);
+  }
+
+  void fail([Object? error]) {
+    var currentResult = result;
+    if (currentResult is FutureVal) {
+      currentResult.cancel();
+    }
+    result = const NullVal();
+    status = VNodeStatus.failed;
+    print("Node $id completed exceptionally: $error");
+  }
+
+  void interrupt({bool scheduleNext = false}) {
+    var currentResult = result;
+    if (currentResult is FutureVal) {
+      currentResult.cancel();
+    }
+    result = const NullVal();
+    status = VNodeStatus.interrupted;
+    if (scheduleNext) parent.scheduleNextNodes(this);
+  }
+
+  void skip() {
+    var currentResult = result;
+    if (currentResult is FutureVal) {
+      currentResult.cancel();
+    }
+    result = const NullVal();
+    status = VNodeStatus.skipped;
+  }
 }
 
 enum VNodeStatus {
@@ -357,109 +413,3 @@ enum VNodeStatus {
     this.isCompleted = false,
   });
 }
-
-class VExecutableContext {
-  final VMachineState vm;
-  final VNodeState node;
-  final Val input;
-  final Val state = const NullVal();
-
-  VExecutableContext(this.input, this.vm, this.node);
-
-  Val get arg => node.arg;
-
-  void populateException(VException ex) {
-    ex.nodeId ??= node.id;
-    ex.runId ??= vm.runId;
-    if (ex.location == null && node.delegate.location != null) {
-      ex.location = node.delegate.location;
-    }
-    if (ex.executable == null && node.delegate.executable != null) {
-      ex.executable = node.delegate.executable.toString();
-    }
-  }
-
-  void complete(Val value) {
-    var currentResult = node.result;
-    if (currentResult is FutureVal) {
-      currentResult.complete(value);
-    }
-    node.result = value;
-    node.status = VNodeStatus.completed;
-    vm.scheduleNextNodes(node);
-  }
-
-  void fail([Object? error]) {
-    var currentResult = node.result;
-    if (currentResult is FutureVal) {
-      currentResult.cancel();
-    }
-    node.result = const NullVal();
-    node.status = VNodeStatus.failed;
-    print("Node ${node.id} completed exceptionally: $error");
-  }
-
-  void interrupt({bool scheduleNext = false}) {
-    var currentResult = node.result;
-    if (currentResult is FutureVal) {
-      currentResult.cancel();
-    }
-    node.result = const NullVal();
-    node.status = VNodeStatus.interrupted;
-    print("Node ${node.id} was interrupted.");
-    if (scheduleNext) vm.scheduleNextNodes(node);
-  }
-}
-
-abstract class VExecutable {
-  int get cost => 1;
-
-  bool get ignoreDependencyFailures => false;
-
-  void scheduled(VNodeState nodeState) {
-    for (var value in nodeState.dependencies) {
-      if (value.status != VNodeStatus.initial) continue;
-      nodeState.parent.scheduleNode(value);
-    }
-  }
-
-  bool before(VExecutableContext context) => true;
-
-  Val execute(VExecutableContext context);
-}
-
-class VFunction extends VExecutable {
-  final String package;
-  final String name;
-  final VExecutable delegate;
-
-  VFunction(this.delegate, {this.package = "root", required this.name});
-
-  late String qualifiedName = "$package:$name";
-
-  @override
-  Val execute(VExecutableContext context) {
-    return delegate.execute(context);
-  }
-
-  @override
-  String toString() {
-    return 'func $package:$name';
-  }
-}
-
-class VLibrary {
-  List<VFunction> functions;
-
-  VLibrary({this.functions = const []});
-
-  static VLibrary merge(List<VLibrary> libraries) {
-    var allFunctions = <VFunction>[];
-    for (var library in libraries) {
-      allFunctions.addAll(library.functions);
-    }
-    return VLibrary(functions: allFunctions);
-  }
-}
-
-final stdCoreLib = VLibrary.merge([stdLangLib, stdMathLib]);

@@ -20,6 +20,16 @@ abstract class VilsParserVisitor<T> extends ParseTreeVisitor<T> {
   /// Return the visitor result.
   T? visitTopLevelStatement(TopLevelStatementContext ctx);
 
+  /// Visit a parse tree produced by [VilsParser.graphStatement].
+  /// [ctx] the parse tree.
+  /// Return the visitor result.
+  T? visitGraphStatement(GraphStatementContext ctx);
+
+  /// Visit a parse tree produced by [VilsParser.subroutine].
+  /// [ctx] the parse tree.
+  /// Return the visitor result.
+  T? visitSubroutine(SubroutineContext ctx);
+
   /// Visit a parse tree produced by [VilsParser.block].
   /// [ctx] the parse tree.
   /// Return the visitor result.

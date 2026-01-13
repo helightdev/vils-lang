@@ -23,6 +23,14 @@ class VilsParserBaseVisitor<T> extends ParseTreeVisitor<T> implements VilsParser
   /// The default implementation returns the result of calling
   /// [visitChildren] on [ctx].
   @override
+  T? visitGraphStatement(GraphStatementContext ctx) => visitChildren(ctx);
+  /// The default implementation returns the result of calling
+  /// [visitChildren] on [ctx].
+  @override
+  T? visitSubroutine(SubroutineContext ctx) => visitChildren(ctx);
+  /// The default implementation returns the result of calling
+  /// [visitChildren] on [ctx].
+  @override
   T? visitBlock(BlockContext ctx) => visitChildren(ctx);
   /// The default implementation returns the result of calling
   /// [visitChildren] on [ctx].

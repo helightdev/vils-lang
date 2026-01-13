@@ -1,12 +1,13 @@
 import 'package:vils_toolchain/src/loader.dart';
 import 'package:vils_toolchain/src/parser/parser.dart';
 import 'package:vils_toolchain/src/value.dart';
+import 'package:vils_toolchain/src/vm/library.dart';
 import 'package:vils_toolchain/src/vm/machine.dart';
-import 'package:vils_toolchain/vils.dart';
 
 void main() async {
   var machine = VMachine();
   machine.load(stdCoreLib);
+  var scope = machine.createCompilationScope();
 
   var ast = parseUnitAst(r"""
 $in, #1 => $out
@@ -16,26 +17,25 @@ $in, #1 => $out
 $void => #1
   | value 10
   | sum 20
-    
-#1 => $void @stack:iar | concat "Something"
-#1 => $void | concat "Another"
 
-$void => $void | value .test  
-$void => $void | value $in@0 
-  
-%begin test test
-Example
-%end
+$in => #switchIndex
+  | value 1
+
+!branch {
+  on: #switchIndex,
+  values: [0, 1, 2],
+  branches: [#s0, #s1, #s2]
+  else: #sElse
+}
 """);
-  var graph = CompilationNodeGraph.fromAst(ast);
-  loadGraphIntoMachine(machine, graph);
+  scope.visitCompilationUnit(ast);
+
+  loadGraphIntoMachine(machine, scope.mainGraph);
   //machine.debugPrint();
   final result = await machine.execute(input: 10.toVal());
   final result2 = await machine.execute(input: 20.toVal());
-  print("----------------------------------------------------");
   //machine.debugPrint();
 
   print("Result: ${result?.resolve().toNative()}");
   print("Result2: ${result2?.resolve().toNative()}");
 }
-

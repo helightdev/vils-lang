@@ -8,8 +8,17 @@ compilationUnit
 
 topLevelStatement
     : block
-    | edgeDeclaration
+    | subroutine
+    | graphStatement
+    ;
+
+graphStatement
+    : edgeDeclaration
     | edgeMacroInvocation
+    ;
+
+subroutine
+    : SUBROUTINE_BEGIN IDENTIFIER graphStatement*
     ;
 
 block
@@ -18,7 +27,7 @@ block
 
 // Edges
 edgeDeclaration
-    : nodeRefList DARR nodeRef transformation*
+    : annotation* nodeRefList DARR nodeRef transformation*
     ;
 
 transformation
@@ -35,8 +44,8 @@ transformExecute
     ;
 
 edgeMacroInvocation
-    : BANG IDENTIFIER value?
-    | BANG IDENTIFIER IDENTIFIER
+    : annotation* BANG IDENTIFIER value?
+    | annotation* BANG IDENTIFIER IDENTIFIER
     ;
 
 // Node References

@@ -303,4 +303,105 @@ extension ValDynamicExtension on dynamic {
   Val toVal() => Val.fromNative(this);
 }
 
-extension ValExtension on Val {}
+class RequireException implements Exception {
+  final Val value;
+  final String expected;
+
+  RequireException(this.value, this.expected);
+
+  @override
+  String toString() {
+    return 'RequireException: Expected $expected but got $value';
+  }
+}
+
+extension ValExtension on Val {
+  
+  ListVal requireList() {
+    if (this is ListVal) return this as ListVal;
+    throw RequireException(this, 'ListVal');
+  }
+  
+  ObjVal requireObj() {
+    if (this is ObjVal) return this as ObjVal;
+    throw RequireException(this, 'ObjVal');
+  }
+  
+  StringVal requireString() {
+    if (this is StringVal) return this as StringVal;
+    throw RequireException(this, 'StringVal');
+  }
+  
+  NumVal requireNum() {
+    if (this is NumVal) return this as NumVal;
+    throw RequireException(this, 'NumVal');
+  }
+  
+  BoolVal requireBool() {
+    if (this is BoolVal) return this as BoolVal;
+    throw RequireException(this, 'BoolVal');
+  }
+
+  NodeIdVal requireNodeId() {
+    if (this is NodeIdVal) return this as NodeIdVal;
+    throw RequireException(this, 'NodeIdVal');
+  }
+
+  ExecutableIdVal requireExecutableId() {
+    if (this is ExecutableIdVal) return this as ExecutableIdVal;
+    throw RequireException(this, 'ExecutableIdVal');
+  }
+
+  // Fully unwraps and returns the NodeId
+  NodeId requireNodeIdUnwrap() {
+    if (this is NodeIdVal) return (this as NodeIdVal).nodeId;
+    throw RequireException(this, 'NodeIdVal');
+  }
+  
+  String requireExecutableIdUnwrap() {
+    if (this is ExecutableIdVal) return (this as ExecutableIdVal).id;
+    throw RequireException(this, 'ExecutableIdVal');
+  }
+  
+  List<NodeId> requireNodeIdListUnwrap() {
+    return requireList().values.map((e) => e.requireNodeIdUnwrap()).toList();
+  }
+}
+
+extension ObjValExtension on ObjVal {
+  Val? operator [](String key) => values[key];
+  void operator []=(String key, Val value) {
+    values[key] = value;
+  }
+  
+  Val require(String key) {
+    final value = values[key];
+    if (value == null) throw RequireException(this, 'ObjVal with key "$key"');
+    return value;
+  }
+  
+  ObjVal withoutKeys(Iterable<String> keys) {
+    final newMap = LinkedHashMap<String, Val>.fromEntries(
+      values.entries.where((e) => !keys.contains(e.key)),
+    );
+    return ObjVal(newMap);
+  }
+
+  ObjVal keepKeys(Iterable<String> keys) {
+    final newMap = LinkedHashMap<String, Val>.fromEntries(
+      values.entries.where((e) => keys.contains(e.key)),
+    );
+    return ObjVal(newMap);
+  }
+  
+}
+
+extension NullableValExtension on Val? {
+  Val ifNull(Val other) {
+    return this == null ? other : this!;
+  }
+  
+  Val orNull() {
+    return this ?? const NullVal();
+  }
+}

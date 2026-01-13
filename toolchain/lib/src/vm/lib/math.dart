@@ -1,4 +1,6 @@
 import 'package:vils_toolchain/src/value.dart';
+import 'package:vils_toolchain/src/vm/function.dart';
+import 'package:vils_toolchain/src/vm/library.dart';
 import 'package:vils_toolchain/src/vm/machine.dart';
 
 final stdMathLib = VLibrary(

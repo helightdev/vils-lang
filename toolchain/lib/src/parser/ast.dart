@@ -1,9 +1,8 @@
 import 'package:antlr4/antlr4.dart';
 import 'package:dart_scope_functions/dart_scope_functions.dart';
+import 'package:vils_toolchain/src/ids.dart';
 import 'package:vils_toolchain/src/location.dart';
 import 'package:vils_toolchain/src/value.dart';
-
-import '../ids.dart';
 
 sealed class VilsAst {
   Location location = Location.invalid;
@@ -32,6 +31,19 @@ extension TokenLocationExtension on Token {
   }
 }
 
+class GraphStatementListAst extends VilsAst {
+
+  final List<EdgeDeclarationAst> edgeDeclarations;
+  final List<EdgeMacroInvocationAst> edgeMacroInvocations;
+
+  GraphStatementListAst(this.edgeDeclarations, this.edgeMacroInvocations);
+
+
+  void merge(GraphStatementListAst other) {
+    edgeDeclarations.addAll(other.edgeDeclarations);
+    edgeMacroInvocations.addAll(other.edgeMacroInvocations);
+  }
+}
 
 class BlockAst extends VilsAst {
   final String id;
@@ -53,14 +65,16 @@ class EdgeDeclarationAst extends VilsAst {
   final NodeId output;
   final List<NodeId> inputs;
   final List<TransformAst> transformations;
+  final List<AnnotationAst> annotations;
 
-  EdgeDeclarationAst(this.output, this.inputs, this.transformations);
+  EdgeDeclarationAst(this.output, this.inputs, this.transformations, this.annotations);
 }
 
 class EdgeMacroInvocationAst extends VilsAst {
   final String name;
   final Val? value;
-  EdgeMacroInvocationAst(this.name, this.value);
+  final List<AnnotationAst> annotations;
+  EdgeMacroInvocationAst(this.name, this.value, this.annotations);
 }
 
 sealed class TransformAst extends VilsAst {
@@ -82,7 +96,7 @@ class TransformExecuteAst extends TransformAst {
 
 class CompilationUnitAst extends VilsAst {
   final List<BlockAst> blocks;
-  final List<EdgeDeclarationAst> edges;
-  final List<EdgeMacroInvocationAst> edgeMacroInvocations;
-  CompilationUnitAst(this.blocks, this.edges, this.edgeMacroInvocations);
+  final GraphStatementListAst main;
+  final Map<String, GraphStatementListAst> subroutines;
+  CompilationUnitAst(this.blocks, this.main, this.subroutines);
 }
